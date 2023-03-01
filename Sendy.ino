@@ -86,8 +86,8 @@ void loop () {
   if(serv_x < 0){
   serv_x = 0;
   }
+  //обработка фиксированных позиций камеры
   b = digitalRead(PIN_BUTTON);
-  
   Serial.print(b);
   Serial.print(" ");
   if(b == 1){
@@ -124,7 +124,7 @@ void loop () {
   data[5] = b - digitalRead(PIN_AD);
   data[2] = map(analogRead(PIN_SPL), 0, 1023, 0, 511);
   data[3] = map(analogRead(PIN_SPR), 0, 1023, 0, 511);
-  
+  //обработка включения резервного питания
   b = digitalRead(PIN_NITRO);
   Serial.print(b);
   Serial.print(" ");
@@ -143,6 +143,7 @@ void loop () {
     past_reserve_battery = 0;
   }
   data[6] = reserve_battery;
+  //отправка данных
   digitalWrite(PIN_LED, data[6]);
   radio.write(data, sizeof(data));
   for(int i=0; i < 7; ++i){
