@@ -15,6 +15,7 @@
 #define PIN_NITRO 2 // BUTTON THAT SWITCHING RESERVE POWER
 #define PIN_LED 8 // LED OF RESERVE POWER
 
+#define DEBUG
 
 // первичная настройка радиомодуля
 RF24 radio(9, 10); // порты D9, D10: CE (SS - выбор ведомого)
@@ -163,10 +164,12 @@ void loop () {
   // отправка данных
   digitalWrite(PIN_LED, data[6]);
   radio.write(data, sizeof(data));
+#ifdef DEBUG
   for(int i=0; i < 7; ++i){
     Serial.print(data[i]);
     Serial.print(" ");
   }
+#endif
   Serial.println("");
   delay (40);
 }
