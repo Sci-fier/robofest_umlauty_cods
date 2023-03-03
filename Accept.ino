@@ -5,6 +5,8 @@
 #include <Multiservo.h> //библиотека для движения сервоприводов при помощи Multi Shield
 #include "ServoSmooth.h" //библиотека для плавного движения сервоприводов
 
+#define DEBUG
+
 //присваивание каждому порту кодовое название. Это необходимо для облегчения понимания кода 
 #define PIN_SX 10 // SERVO X
 #define PIN_SY 9 // SERVO Y
@@ -102,6 +104,7 @@ void loop() {
     else{
       analogWrite(PIN_RELAY, 255); // выключаем резервное питание (перемещаем реле в позицию 255)
     }
+#ifdef DEBUG
     //проверка выходных значений
     for(int i=0; i < 7; ++i){
       Serial.print(data[i]);
@@ -109,6 +112,7 @@ void loop() {
     }
     Serial.println("");
   }
+#endif 
 
   delay(40);
 }
