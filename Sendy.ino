@@ -3,17 +3,14 @@
 #include <RF24.h> // библиотека, необходимая для взаиодействия с радиомодулем NRF24L01
 
 // присваивание каждому порту кодовое название. Это необходимо для облегчения понимания кода 
-#define PIN_VRX A4 // VELOCITY X
-#define PIN_VRY A5 // VELOCITY Y
-#define PIN_BUTTON 7 // PIN BUTTON
+#define PIN_VRX A5 // VELOCITY X
+#define PIN_VRY A4 // VELOCITY Y
+#define PIN_BUTTON 8 // PIN BUTTON
 #define PIN_SPL A6 // SPEED LEFT
 #define PIN_SPR A7 // SPEED RIGHT
-#define PIN_CC 5 // CLAW CLOSE
-#define PIN_CO 6 // CLAW OPEN
-#define PIN_AD 3 // ARM DOWN
-#define PIN_AU 4 // ARM UP
-#define PIN_NITRO 2 // BUTTON THAT SWITCHING RESERVE POWER
-#define PIN_LED 8 // LED OF RESERVE POWER
+#define PIN_ARM A3 // ARM POS
+#define PIN_CC A2 // CLAW CLOSE
+#define PIN_CO A1 // CLAW OPEN
 
 #define DEBUG
 
@@ -22,14 +19,21 @@ RF24 radio(9, 10); // порты D9, D10: CE (SS - выбор ведомого)
 const uint32_t pipe = 111156789; // адрес рабочей трубы
 
 //объявление переменных
-int serv_y = 90; // переменная, хранящая позицию камеры по оси y
-int serv_x = 0;  // переменная, хранящая позицию камеры по оси x
+int serv_y = 117; // переменная, хранящая позицию камеры по оси y
+int serv_x = 16;  // переменная, хранящая позицию камеры по оси x
 int b;           // буферная (дополнительная) переменная
 int fix_poz_code = 0; // переменная, хранящая сокращенный код позиции камеры 
 bool reserve_battery = 0; // переменная, отвечающая за резервное питание
 int past_camera_poz = 0; // переменная, сохраняющая прошлую позицию камеры
 int past_reserve_battery = 0; // переменная, сохраняющая состояние кнопки резервного питания
-long int data[7]; // массив передачи
+long int data[6]; // массив передачи
+
+int calc(int x){
+  x = map(x, 345, 908, 0, 1023);
+  if(x < 0){x = 0;}
+  if(x > 1023){x = 1023;}
+  return(x);
+}
 
 void setup () {
   Serial.begin(9600);
@@ -99,7 +103,7 @@ void loop () {
   Serial.print(b);
   Serial.print(" ");
   // взаимодействие с кнопкой джойстика
-  if(b == 1){
+  if(b == 0){
     // проверка на зажатие кнопки джойстика
     if(past_camera_poz == 0){
       // выбор фиксированной позиции
@@ -127,49 +131,23 @@ void loop () {
   // 2 - скорость левых колес в формате от 0 до 511
   // 3 - скорость правых колес в формате от 0 до 511
   // 4 - скорость врашения мотора в клешне от 0 до 2
-  // 5 - скорость врашения мотора в подьемном механизме от 0 до 2
-  // 6 - включение резервного питания ( 0 - не включать, 1 - включать )
+  // 5 - положение мотора в подьемном механизме от 0 до 1023
   // заполнение массива отправки
   data[0] = serv_x; // положение камеры по оси х
   data[1] = serv_y; // положение камеры по оси у
   b = digitalRead(PIN_CC) + 1;
   data[4] = b - digitalRead(PIN_CO); // подсчет скорости и направления сжатия клешни
-  b = digitalRead(PIN_AU) + 1;
-  data[5] = b - digitalRead(PIN_AD); // подсчет скорости и направления изменения угла манипулятора
-  data[2] = map(analogRead(PIN_SPL), 0, 1023, 0, 511); // подсчет скорости и направления  вращения моторов левой стороны
+  data[5] = calc(analogRead(PIN_ARM)); // подсчет угла манипулятора
+  data[2] = map(analogRead(PIN_SPL), 706, 1023, 511, 0); // подсчет скорости и направления  вращения моторов левой стороны
   data[3] = map(analogRead(PIN_SPR), 0, 1023, 0, 511); // подсчет скорости и направления  вращения моторов правой стороны
-  // обработка включения резервного питания
-  b = digitalRead(PIN_NITRO);
-  Serial.print(b);
-  Serial.print(" ");
-  // взаимодействие с кнопкой резервного питания
-  if(b == 1){
-    // проверка на зажатие кнопки резервного питания
-    if(past_reserve_battery == 0){
-      // выключение резервного питания
-      if(reserve_battery == 1){
-        reserve_battery = 0;
-      }
-      else{
-        // включение резервного питания
-        reserve_battery = 1;
-      }
-    }
-    past_reserve_battery = 1;
-  }
-  else{
-    past_reserve_battery = 0;
-  }
-  data[6] = reserve_battery; // включение/выключение резервной батареи
-  // отправка данных
-  digitalWrite(PIN_LED, data[6]);
+  
   radio.write(data, sizeof(data));
 #ifdef DEBUG
-  for(int i=0; i < 7; ++i){
+  for(int i=0; i < 6; ++i){
     Serial.print(data[i]);
     Serial.print(" ");
   }
 #endif
   Serial.println("");
-  delay (40);
+  delay (5);
 }
